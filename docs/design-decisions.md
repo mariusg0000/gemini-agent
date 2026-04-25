@@ -53,12 +53,33 @@ assistant. Restricting it to the workspace would defeat its purpose (file
 operations, sysadmin-like tasks, media, etc.). Safety comes from:
 
 - explicit safety rules in the subagent's system prompt,
-- Gemini CLI's per-tool confirmation UX,
+- the policy engine that intercepts dangerous shell commands
+  (see `docs/safety-policy.md`),
 - user-level OS permissions.
 
 If you want tighter isolation, narrow the `tools` list in
 `profile/.gemini/agents/python-runner.md`, or run Gemini CLI inside a sandbox
 profile. That is a conscious trade-off, not a default.
+
+## Why YOLO + policy engine instead of default approval
+
+Three options were considered:
+
+1. **Default approval.** Every tool call shows a UI prompt. Safe but
+   makes autonomous work painful; the user becomes a bottleneck for
+   trivial operations.
+2. **Full YOLO.** Every tool call runs, no prompt. Fast but unsafe:
+   a single misreading of the goal could `rm -rf` the home folder.
+3. **YOLO + policy engine.** Tool calls run by default, but the policy
+   engine transparently intercepts destructive or privileged commands
+   and forces a prompt (or a hard block) on them.
+
+Option 3 is the chosen default. It gives autonomy for the 95% of
+operations that are safe (reads, file writes inside the workspace,
+running scripts, computing things, using APIs) and keeps the 5% that
+are truly dangerous behind an explicit confirmation. Rules live in
+`profile/.gemini/policies/safety.toml` and are version-controlled, so
+safety behavior is reviewable and shareable.
 
 ## Why the repo ships templates, not user state
 

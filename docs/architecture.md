@@ -32,6 +32,25 @@ system prompt. The launcher also sets `GEMINI_SYSTEM_MD=$HOME/.gemini-agent/syst
   Isolated agents exposed as tools to the main agent. Each has its own system
   prompt, tool allowlist, context, and limits.
 
+## Approval model and policy engine
+
+Default approval mode is `yolo`. Ordinary tool calls execute without a UI
+prompt so the agent is fluid and autonomous.
+
+The safety net is Gemini CLI's policy engine:
+
+- Rules live in `~/.gemini-agent/.gemini/policies/*.toml`.
+- `deny` rules hard-block catastrophic commands (e.g. `rm -rf /`,
+  `mkfs`, `dd` to a block device).
+- `ask_user` rules intercept destructive or privileged commands
+  (sudo, package managers, service/power control, force-push,
+  curl|bash, firewall/user/mount changes) and force a UI confirmation
+  even in YOLO mode.
+- Rules apply globally to `gemini-agent` and to every subagent it
+  spawns. Subagents cannot bypass the policy.
+
+See `docs/safety-policy.md` for the full rule set and rationale.
+
 ## Python workspace
 
 Long-running automation work happens through a dedicated Python workspace at

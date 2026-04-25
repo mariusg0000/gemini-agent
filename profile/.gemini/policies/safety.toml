@@ -1,0 +1,347 @@
+# gemini-agent safety policy
+#
+# Purpose:
+#   gemini-agent runs in YOLO mode by default (no UI confirmations for
+#   ordinary tool calls). This file is the safety net: it forces either
+#   confirmation (ask_user) or a hard block (deny) for operations that
+#   are destructive, privileged, or hard to reverse.
+#
+# Scope:
+#   These rules apply globally to gemini-agent and any subagent it spawns.
+#
+# Notes on matching:
+#   - `commandPrefix` matches when the shell command starts with the
+#     given string (literal, no regex).
+#   - `commandRegex` matches the command from its start (no `^`
+#     anchor needed). Avoid `^` and `$` anchors: those apply to the
+#     full JSON representation of arguments, not the command itself.
+#   - Higher `priority` wins over lower priority within the same tier.
+#   - User rules (this file) override the YOLO allow-all default.
+
+# ---------------------------------------------------------------------------
+# Hard blocks: catastrophic, not-even-ask
+# ---------------------------------------------------------------------------
+
+# rm -rf / (and variants like -fr, / trailing space, /*, etc.)
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'rm[[:space:]]+([^|;&]*[[:space:]]+)?-[a-zA-Z]*(rf|fr)[a-zA-Z]*[[:space:]]+(/|/[[:space:]]|/\*|/ )'
+decision = "deny"
+priority = 200
+denyMessage = "Blocked: recursive delete targeting root filesystem is never allowed."
+
+# Write raw bytes to a block device
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'dd[[:space:]].*of=/dev/(sd|nvme|hd|mmcblk|vd|xvd|loop)'
+decision = "deny"
+priority = 200
+denyMessage = "Blocked: dd to a block device would destroy data."
+
+# Create a filesystem on a device (format/erase)
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'mkfs(\.[a-zA-Z0-9]+)?[[:space:]]'
+decision = "deny"
+priority = 200
+denyMessage = "Blocked: mkfs would erase a filesystem."
+
+# Partition table manipulation
+[[rule]]
+toolName = "run_shell_command"
+commandPrefix = ["fdisk ", "sfdisk ", "parted ", "gdisk ", "wipefs "]
+decision = "deny"
+priority = 200
+denyMessage = "Blocked: disk partitioning tool."
+
+# Shred / wipe entire device
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'shred[[:space:]]+.*/dev/'
+decision = "deny"
+priority = 200
+denyMessage = "Blocked: shred on a device would destroy data."
+
+# ---------------------------------------------------------------------------
+# Confirm: privilege escalation
+# ---------------------------------------------------------------------------
+
+[[rule]]
+toolName = "run_shell_command"
+commandPrefix = ["sudo ", "doas ", "pkexec ", "su ", "su -"]
+decision = "ask_user"
+priority = 160
+
+# ---------------------------------------------------------------------------
+# Confirm: power / session lifecycle
+# ---------------------------------------------------------------------------
+
+[[rule]]
+toolName = "run_shell_command"
+commandPrefix = [
+  "reboot",
+  "shutdown",
+  "halt",
+  "poweroff",
+  "init 0",
+  "init 6",
+  "systemctl reboot",
+  "systemctl poweroff",
+  "systemctl halt",
+  "systemctl suspend",
+  "systemctl hibernate",
+  "loginctl terminate-user",
+  "loginctl kill-user",
+]
+decision = "ask_user"
+priority = 150
+
+# ---------------------------------------------------------------------------
+# Confirm: service management (system-wide)
+# ---------------------------------------------------------------------------
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'systemctl[[:space:]]+(stop|disable|mask|unmask|restart|kill|reload|daemon-reload|enable|start)'
+decision = "ask_user"
+priority = 120
+
+[[rule]]
+toolName = "run_shell_command"
+commandPrefix = ["service ", "rc-service ", "initctl "]
+decision = "ask_user"
+priority = 120
+
+# ---------------------------------------------------------------------------
+# Confirm: package management (system-wide state change)
+# ---------------------------------------------------------------------------
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = '(apt|apt-get|aptitude)[[:space:]]+(install|remove|purge|autoremove|upgrade|dist-upgrade|full-upgrade|clean|autoclean|reinstall)'
+decision = "ask_user"
+priority = 120
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = '(dnf|yum)[[:space:]]+(install|remove|erase|upgrade|update|autoremove|reinstall)'
+decision = "ask_user"
+priority = 120
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'pacman[[:space:]]+-[A-Za-z]*(R|S|U|Syu)'
+decision = "ask_user"
+priority = 120
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'snap[[:space:]]+(install|remove|refresh|revert)'
+decision = "ask_user"
+priority = 120
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'flatpak[[:space:]]+(install|uninstall|update|override)'
+decision = "ask_user"
+priority = 120
+
+[[rule]]
+toolName = "run_shell_command"
+commandPrefix = ["dpkg -i ", "dpkg --install ", "dpkg -r ", "dpkg --remove ", "dpkg -P ", "dpkg --purge ", "rpm -i ", "rpm -U ", "rpm -e "]
+decision = "ask_user"
+priority = 120
+
+# Global pip / npm / gem / cargo installs (should use project-local venvs)
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'pip[23]?[[:space:]]+install([[:space:]]+-[^[:space:]]+)*[[:space:]]+--user'
+decision = "ask_user"
+priority = 110
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = '(sudo[[:space:]]+)?pip[23]?[[:space:]]+install'
+decision = "ask_user"
+priority = 105
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'npm[[:space:]]+(install|i|uninstall|rm|remove)[[:space:]]+(-g|--global)'
+decision = "ask_user"
+priority = 110
+
+# ---------------------------------------------------------------------------
+# Confirm: destructive filesystem operations
+# ---------------------------------------------------------------------------
+
+# Any recursive rm: -r, -R, --recursive, combined with -f or not.
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'rm[[:space:]]+([^|;&]*[[:space:]]+)?(--recursive|-[a-zA-Z]*r[a-zA-Z]*|-[a-zA-Z]*R[a-zA-Z]*)'
+decision = "ask_user"
+priority = 100
+
+# Recursive chown/chgrp
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = '(chown|chgrp)[[:space:]]+(-[a-zA-Z]*R[a-zA-Z]*|--recursive)'
+decision = "ask_user"
+priority = 100
+
+# Recursive chmod
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'chmod[[:space:]]+(-[a-zA-Z]*R[a-zA-Z]*|--recursive)'
+decision = "ask_user"
+priority = 100
+
+# Truncate / zero out a file in-place
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = ':[[:space:]]*>[[:space:]]*/|truncate[[:space:]]+-s[[:space:]]+0'
+decision = "ask_user"
+priority = 100
+
+# ---------------------------------------------------------------------------
+# Confirm: process signalling at scale
+# ---------------------------------------------------------------------------
+
+[[rule]]
+toolName = "run_shell_command"
+commandPrefix = ["killall ", "pkill "]
+decision = "ask_user"
+priority = 100
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'kill[[:space:]]+-(9|KILL|TERM|15)[[:space:]]+'
+decision = "ask_user"
+priority = 100
+
+# ---------------------------------------------------------------------------
+# Confirm: download-and-execute anti-pattern
+# ---------------------------------------------------------------------------
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = '(curl|wget|fetch)[[:space:]][^|;&]*\|[[:space:]]*(sh|bash|zsh|ksh|dash|python3?|ruby|perl|node)\b'
+decision = "ask_user"
+priority = 150
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = '(bash|sh|zsh)[[:space:]]+<\([[:space:]]*(curl|wget)'
+decision = "ask_user"
+priority = 150
+
+# ---------------------------------------------------------------------------
+# Confirm: container / VM destructive ops
+# ---------------------------------------------------------------------------
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'docker[[:space:]]+(system[[:space:]]+prune|volume[[:space:]]+rm|volume[[:space:]]+prune|network[[:space:]]+rm|network[[:space:]]+prune|rm[[:space:]]+-f|rmi[[:space:]]+-f|image[[:space:]]+prune|container[[:space:]]+prune|builder[[:space:]]+prune)'
+decision = "ask_user"
+priority = 120
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'podman[[:space:]]+(system[[:space:]]+prune|volume[[:space:]]+rm|network[[:space:]]+rm|rm[[:space:]]+-f|rmi[[:space:]]+-f)'
+decision = "ask_user"
+priority = 120
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = '(virsh|vboxmanage|VBoxManage)[[:space:]]+(destroy|undefine|unregistervm|remove)'
+decision = "ask_user"
+priority = 120
+
+# ---------------------------------------------------------------------------
+# Confirm: git force / history rewrite
+# ---------------------------------------------------------------------------
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'git[[:space:]]+push[[:space:]]+([^|;&]*[[:space:]]+)?(--force(-with-lease)?|-f\b)'
+decision = "ask_user"
+priority = 120
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'git[[:space:]]+(reset[[:space:]]+--hard|clean[[:space:]]+-[a-zA-Z]*[dfx]|filter-branch|filter-repo)'
+decision = "ask_user"
+priority = 110
+
+# ---------------------------------------------------------------------------
+# Confirm: scheduling / persistence
+# ---------------------------------------------------------------------------
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'crontab[[:space:]]+(-r|-e|-)'
+decision = "ask_user"
+priority = 100
+
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'systemctl[[:space:]]+--user[[:space:]]+(enable|disable|mask|stop|restart)'
+decision = "ask_user"
+priority = 100
+
+# ---------------------------------------------------------------------------
+# Confirm: network / firewall reconfiguration
+# ---------------------------------------------------------------------------
+
+[[rule]]
+toolName = "run_shell_command"
+commandPrefix = [
+  "ufw ",
+  "iptables ",
+  "ip6tables ",
+  "nft ",
+  "firewall-cmd ",
+  "ip route ",
+  "ip link ",
+  "route ",
+]
+decision = "ask_user"
+priority = 100
+
+# ---------------------------------------------------------------------------
+# Confirm: user / group management
+# ---------------------------------------------------------------------------
+
+[[rule]]
+toolName = "run_shell_command"
+commandPrefix = [
+  "useradd ",
+  "userdel ",
+  "usermod ",
+  "groupadd ",
+  "groupdel ",
+  "groupmod ",
+  "passwd ",
+  "gpasswd ",
+  "adduser ",
+  "deluser ",
+]
+decision = "ask_user"
+priority = 100
+
+# ---------------------------------------------------------------------------
+# Confirm: mount / swap / fstab changes
+# ---------------------------------------------------------------------------
+
+[[rule]]
+toolName = "run_shell_command"
+commandPrefix = [
+  "mount ",
+  "umount ",
+  "swapon ",
+  "swapoff ",
+  "mkswap ",
+  "cryptsetup ",
+]
+decision = "ask_user"
+priority = 100

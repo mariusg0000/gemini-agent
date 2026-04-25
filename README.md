@@ -16,6 +16,7 @@ launcher. No fork of Gemini CLI, no patching - just configuration.
 - `~/.local/bin/gemini-agent`         launcher that exports `GEMINI_CLI_HOME` + `GEMINI_SYSTEM_MD`
 - `~/gemini-agent-workspace/`         Python workspace: venv, scripts/, tasks/, data/, logs/, scripts.md
 - `python-runner` subagent            isolated Python runner with full user-level system access
+- YOLO mode + policy safety net       autonomous by default; destructive/privileged shell commands still prompt
 - Backup scripts                      `~/.gemini-agent/backup/backup.sh` and `restore.sh`
 
 Your existing `~/.gemini` profile is not touched.
@@ -54,6 +55,7 @@ Authenticate when prompted.
 │       ├── settings.json
 │       ├── GEMINI.md
 │       ├── agents/python-runner.md
+│       ├── policies/safety.toml
 │       └── skills/
 ├── workspace/                    -> installed to ~/gemini-agent-workspace/
 │   ├── README.md
@@ -67,6 +69,7 @@ Authenticate when prompted.
 ├── docs/
 │   ├── architecture.md
 │   ├── subagents.md
+│   ├── safety-policy.md
 │   └── design-decisions.md
 ├── LICENSE                       MIT
 └── README.md
@@ -77,6 +80,7 @@ Authenticate when prompted.
 - Edit behavior:       `~/.gemini-agent/system.md`, `~/.gemini-agent/.gemini/GEMINI.md`
 - Add skills:          `~/.gemini-agent/.gemini/skills/<name>/SKILL.md`
 - Add subagents:       `~/.gemini-agent/.gemini/agents/<name>.md`
+- Safety rules:        `~/.gemini-agent/.gemini/policies/safety.toml` (see `docs/safety-policy.md`)
 - Add scripts:         `~/gemini-agent-workspace/scripts/<name>/` and register in `scripts.md`
 - Pin deps:            `~/gemini-agent-workspace/requirements.txt`
 
@@ -96,6 +100,14 @@ See `~/.gemini-agent/backup/README.md` for details.
 
 ## Safety notes
 
+- `gemini-agent` defaults to `yolo` approval mode. Ordinary tool calls run
+  without a UI confirmation so the agent is fluid and autonomous.
+- The policy engine in `profile/.gemini/policies/safety.toml` is the
+  safety net: it forces a UI confirmation for destructive or privileged
+  shell commands (sudo, rm -r, package installers, service/power control,
+  force-push, curl|bash, firewall and user/mount changes) and hard-blocks
+  catastrophic ones (rm -rf /, mkfs, dd to a block device, partitioning,
+  shred of a device). See `docs/safety-policy.md` for the full list.
 - `python-runner` is configured with `tools: ["*"]` and full user-level access
   to the system. It can read and write anywhere the user can. Review its
   instructions in `profile/.gemini/agents/python-runner.md` before installing.

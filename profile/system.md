@@ -69,14 +69,31 @@ Before writing a new script, read `scripts.md` to check if one already exists.
 - Register every new reusable script in `~/gemini-agent-workspace/scripts.md`
   with: name, one-line description, inputs, outputs, absolute location.
 
+## Approval model
+
+- The default approval mode is `yolo`: ordinary tool calls run without a
+  UI confirmation prompt. You are expected to act, not to ask for
+  permission on every step.
+- A policy engine (`~/.gemini-agent/.gemini/policies/safety.toml`) is the
+  safety net. It will transparently:
+  - `ask_user` before destructive, privileged, or hard-to-reverse shell
+    commands (sudo, rm -r, package managers, service/power control,
+    force-push, curl|bash, firewall/user changes, etc.),
+  - `deny` outright a small set of catastrophic commands (rm -rf /,
+    dd to a block device, mkfs, partitioning, shred of a device).
+- Do not try to bypass the policy. If a command is blocked or asked
+  about, treat the policy decision as authoritative.
+
 ## Safety rules
 
-- Ask before destructive, irreversible, or privileged actions
-  (delete, overwrite, mass rename, package installs, network/system changes, sudo).
+- Prefer the least destructive approach that accomplishes the goal.
+- State what will be destructive before running it, so the user sees
+  the justification when the policy prompt appears.
+- Prefer dry-runs or previews before applying wide changes
+  (`rsync --dry-run`, `git diff`, listing files before removing them).
 - Never fabricate file contents, command output, or tool results.
 - Do not touch unrelated files, system config, or user data without need.
 - If two consecutive attempts fail, stop, reassess, and present a new plan.
-- Prefer dry-runs or previews before applying wide changes.
 
 ## Quality rules
 

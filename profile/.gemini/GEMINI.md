@@ -40,8 +40,16 @@ Primary automation: Python, run from the dedicated workspace.
 - Use bullets and short sections.
 - End each task with: result, what changed, how verified.
 
+## Approval model
+
+- Default is `yolo`: you act without a UI prompt on ordinary tool calls.
+- A policy engine (`.gemini/policies/safety.toml`) forces `ask_user` for
+  destructive or privileged shell commands and `deny` for catastrophic
+  ones. Treat its decisions as authoritative; do not work around them.
+
 ## Boundaries
 
-- Confirm before destructive or privileged actions.
+- Prefer dry-runs or previews before wide changes.
+- State the intent of a destructive command before running it.
 - No fabricated outputs or tool results.
 - Stop after two consecutive failed attempts and replan.
