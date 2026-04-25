@@ -13,6 +13,20 @@ makes Gemini CLI treat that path as the user-level config root. The launcher
 `~/.local/bin/gemini-agent` sets `GEMINI_CLI_HOME=$HOME/.gemini-agent` and then
 runs the regular `gemini` binary.
 
+## Launcher: HOME guard
+
+Gemini CLI uses a tiered discovery model (workspace > user > extension) for
+skills, settings, and policies. When the current working directory is `$HOME`,
+Gemini picks up `$HOME/.gemini/` (the default coding profile) as the
+**workspace** tier for the `gemini-agent` session, which bleeds skills and
+settings from the coding profile into the agent profile and can trigger
+"skill conflict" warnings.
+
+The launcher avoids this by switching to the agent's dedicated workspace
+(`~/gemini-agent-workspace/`) whenever it is invoked from `$HOME`. Any other
+CWD is honored unchanged, so launching from a project directory still uses
+that project as the workspace.
+
 ## System prompt override
 
 The agentic behavior is installed as a full override of Gemini CLI's built-in

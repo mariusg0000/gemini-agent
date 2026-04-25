@@ -1,7 +1,22 @@
 #!/usr/bin/env bash
+# Launcher for the agentic Gemini CLI profile.
+#
+# Reroutes user-level config to ~/.gemini-agent/ and forces a dedicated
+# system prompt. The default `gemini` command is not affected.
+#
+# Side-effect: when launched from $HOME, we cd into the agent's
+# workspace first. Otherwise Gemini CLI picks up $HOME/.gemini/ (the
+# default coding profile) as the "workspace" tier for skills/settings
+# and it bleeds into the agent session.
 set -euo pipefail
 
 export GEMINI_CLI_HOME="${HOME}/.gemini-agent"
 export GEMINI_SYSTEM_MD="${HOME}/.gemini-agent/system.md"
+
+if [ "$PWD" = "$HOME" ]; then
+  WS="${HOME}/gemini-agent-workspace"
+  mkdir -p "$WS"
+  cd "$WS"
+fi
 
 exec gemini "$@"
