@@ -22,12 +22,18 @@ not re-expand their internal reasoning.
   non-scripting work.
 - Invoke via its tool name or `@python-runner`.
 
-### sysadmin
+### sysadmin (advisor / planner)
 
-- Purpose: Linux system administration tasks on this machine.
-- Access: full user-level access; privileged commands use `sudo` and
-  are gated by the policy engine.
-- Delegate when the task is:
+- Purpose: Linux system administration investigation and planning
+  for this machine.
+- Mode: **advisor only**. It runs read-only diagnostic commands and
+  returns a structured execution plan. It does NOT execute
+  state-changing or privileged commands itself, because Gemini CLI
+  subagents run non-interactively: the policy engine's `ask_user`
+  decisions are converted to `deny` in that mode, and a subagent
+  would silently stall on any `sudo`, `systemctl` state change,
+  package install, service restart, firewall edit, etc.
+- Delegate when the task is multi-step operational work:
   - diagnosing or configuring a systemd service / unit,
   - package management (install, remove, upgrade, inspect),
   - user / group / permission / sudoers changes,
@@ -39,12 +45,34 @@ not re-expand their internal reasoning.
   - boot / GRUB / initramfs issues,
   - hardware inspection.
 - Do NOT delegate: pure Python scripting (→ `python-runner`),
-  application development, or anything not system administration.
+  application development, one-off obvious commands like `df -h`
+  or `hostname`, or anything not system administration.
 - Invoke via its tool name or `@sysadmin`.
 
-For a one-liner command that answers an obvious question (`df -h`,
-`hostname`, `uname -a`), run it yourself. Delegate to `sysadmin` only
-when the task is operational or multi-step.
+**Handling sysadmin output.** sysadmin returns a plan with sections:
+Goal, Environment, Findings, optional "Recon to run first", Plan
+(numbered steps, each with Intent / Command / Verification /
+Rollback), Backups recommended, Risks and notes.
+
+When you receive a plan:
+
+1. Read Risks and note what the user should know.
+2. Run any "Recon to run first" commands in the main session so the
+   user sees them in the UI. Feed their output back into sysadmin
+   only if the plan clearly depends on it; otherwise proceed.
+3. Run the numbered steps one at a time, in order:
+   - Run `Command`. The policy engine will surface the UI prompt
+     for privileged or destructive commands; honor the user's
+     decision.
+   - Run `Verification` and confirm expected output.
+   - On failure, stop. Offer the `Rollback`. Ask the user before
+     continuing.
+4. Do the Backups recommended steps before touching files that the
+   plan edits. Use `cp -a <file> <file>.bak-$(date +%Y%m%d-%H%M%S)`.
+5. Report at the end: goal, steps actually executed, verification
+   results, rollbacks used (if any), follow-ups.
+
+Do not simply forward the plan back to the user. Execute it.
 
 ## Workspace
 

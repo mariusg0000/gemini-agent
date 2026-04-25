@@ -74,25 +74,59 @@ See `profile/.gemini/agents/python-runner.md`. Key points:
   `requirements.txt`, `tasks/<YYYY-MM-DD-slug>/`.
 - Returns only a concise summary to the parent.
 
-### sysadmin
+### sysadmin (advisor pattern)
 
 See `profile/.gemini/agents/sysadmin.md`. Key points:
 
-- Linux system administration specialist for this machine.
-- Full user-level system access; privileged commands go through `sudo`
-  and are gated by the policy engine (which will prompt for
-  confirmation on destructive or privileged operations).
-- Investigate-first workflow: detects the distro/init/package stack,
-  inspects current state, plans, acts, verifies.
-- Backs up any file edited in `/etc/` with a timestamped `.bak-*`
-  copy before modifying it.
-- Prefers dry-run flags where available (`apt --simulate`,
-  `systemctl --dry-run`, `nft -c`, `sshd -t`, `nginx -t`, `visudo -c`).
+- Linux system administration **investigator and planner** for this
+  machine. It runs only read-only diagnostic commands and returns a
+  structured execution plan; it does not execute state-changing or
+  privileged commands itself.
+- Why: Gemini CLI subagents run non-interactively. The policy engine
+  (`~/.gemini-agent/.gemini/policies/safety.toml`) forces `ask_user`
+  on privileged and destructive commands, and non-interactive mode
+  converts `ask_user` to `deny`. A subagent that tried to run
+  `sudo systemctl enable ...` would be silently denied and appear
+  stuck. Upstream tracks this limitation (see
+  [gemini-cli#18127](https://github.com/google-gemini/gemini-cli/issues/18127),
+  [gemini-cli#14306](https://github.com/google-gemini/gemini-cli/issues/14306)).
+  The advisor pattern sidesteps the problem: investigation happens
+  in the subagent, execution happens in the interactive parent
+  session where policy prompts work.
 - Scope: services, packages, users, filesystems, networking, logs,
-  kernel, security, boot, hardware, cron. Out of scope: Python
-  scripting (→ python-runner), application development, remote hosts
-  unless explicitly authorized.
-- Returns only a concise summary including any `.bak-*` paths created.
+  kernel, security, boot, hardware. Out of scope: Python scripting
+  (→ `python-runner`), application development, remote hosts.
+- Allowed to run: read-only inspection (`systemctl status`,
+  `journalctl`, `ss`, `ip`, `ps`, `df`, `dpkg -l`, `cat /etc/...`,
+  etc.).
+- Forbidden from running itself: anything with `sudo`/`doas`/`pkexec`,
+  any `systemctl start|stop|enable|disable|mask|restart|...`,
+  package state changes, firewall edits, user management, file
+  writes to `/etc`, `rm -r`, `dd`, `mount`/`umount`, `reboot`,
+  `git push --force`, `curl | sh`, etc. These go in the plan, not
+  in an actual tool call.
+- Returns a structured plan with: Goal, Environment, Findings,
+  optional "Recon to run first", numbered Plan steps (Intent /
+  Command / Verification / Rollback), Backups recommended, Risks
+  and notes.
+
+### How the parent consumes a sysadmin plan
+
+1. Read the Risks and Backups sections before touching anything.
+2. If the plan includes "Recon to run first", run those commands
+   in the main session first. The user sees them in the UI.
+3. For each numbered step:
+   - Create any backups the plan recommends
+     (`cp -a <file> <file>.bak-$(date +%Y%m%d-%H%M%S)`).
+   - Run `Command`. The policy engine surfaces a prompt for
+     destructive or privileged commands; honor the user's decision.
+   - Run `Verification` and confirm expected output.
+   - On failure, stop. Offer `Rollback` and ask before continuing.
+4. Report: goal, steps executed, verification results, rollbacks
+   used, follow-ups.
+
+The parent does not forward the plan to the user as the final
+answer. It executes the plan.
 
 ## Tuning
 

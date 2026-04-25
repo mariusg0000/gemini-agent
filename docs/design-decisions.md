@@ -81,6 +81,36 @@ are truly dangerous behind an explicit confirmation. Rules live in
 `profile/.gemini/policies/safety.toml` and are version-controlled, so
 safety behavior is reviewable and shareable.
 
+## Why `sysadmin` is an advisor, not an executor
+
+Gemini CLI subagents run in non-interactive mode, and in that mode the
+policy engine's `ask_user` decisions are converted to `deny` (see
+[gemini-cli#18127](https://github.com/google-gemini/gemini-cli/issues/18127),
+[gemini-cli#14306](https://github.com/google-gemini/gemini-cli/issues/14306)).
+A sysadmin subagent that executed privileged commands itself would
+therefore be silently blocked on the first `sudo`, `systemctl start`,
+`apt install`, firewall change, etc. — exactly the operations it
+exists to perform.
+
+Three ways to resolve this were considered:
+
+1. **Drop `ask_user` for `sysadmin`.** Let it run anything, no prompt.
+   This would remove the safety net on exactly the subagent with the
+   highest blast radius. Rejected.
+2. **Wait for upstream HITL for subagents.** Tracked upstream, not yet
+   available. Rejected as a blocker.
+3. **Advisor pattern.** The subagent only runs read-only diagnostics
+   and returns a structured execution plan (Command / Verification /
+   Rollback for each step). The parent agent executes the plan in the
+   main interactive session, where the policy engine can prompt the
+   user normally. Chosen.
+
+This pattern keeps full HITL coverage, keeps `sysadmin` useful on the
+messy investigative work that would otherwise sprawl the main
+session, and stays compatible with whatever upstream does next: if
+subagent HITL ships, we can relax this without touching the parent's
+flow.
+
 ## Why the repo ships templates, not user state
 
 Templates can be version-controlled, diffed, and shared. User state (oauth

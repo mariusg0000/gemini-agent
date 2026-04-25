@@ -144,5 +144,37 @@ confirmation UI.
   always a mistake.
 - `ask_user` is preferred over `deny` for anything recoverable, so the
   user retains full control.
-- Rules apply to every subagent (including `python-runner` and, in the
-  future, `sysadmin`). Subagents cannot escape the policy.
+- Rules apply to every subagent (including `python-runner` and
+  `sysadmin`). Subagents cannot escape the policy.
+
+## Subagents and `ask_user`
+
+Gemini CLI subagents (anything launched as a subagent tool, e.g.
+`python-runner`, `sysadmin`) run in **non-interactive mode**. In that
+mode the policy engine cannot surface a confirmation UI to the user,
+so any rule that would normally return `ask_user` is converted to
+`deny`. The subagent call simply fails.
+
+Practical consequences:
+
+- A subagent that tries `sudo systemctl enable ...`, `apt install`,
+  `ufw enable`, `rm -r`, etc. will be blocked silently.
+- This is not a configuration bug. It is upstream behavior (see
+  [gemini-cli#18127](https://github.com/google-gemini/gemini-cli/issues/18127)
+  and [gemini-cli#14306](https://github.com/google-gemini/gemini-cli/issues/14306)).
+
+Two design patterns work around it:
+
+1. **Advisor pattern** (used by `sysadmin`): the subagent only runs
+   read-only inspection and returns a structured plan. The parent
+   agent executes the plan in the main session, where the policy
+   engine can prompt the user normally. This keeps full confirmation
+   coverage.
+2. **Scoped-escape pattern** (not used in this profile): run a
+   narrowly-scoped subagent without the policy constraints and
+   accept the loss of HITL. Risky; we reject this for system-wide
+   operations.
+
+When adding a new subagent, decide up front whether it ever needs
+`ask_user`-class commands. If yes, use the advisor pattern; have the
+subagent produce a plan and let the parent execute it.

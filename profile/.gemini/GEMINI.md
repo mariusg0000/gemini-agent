@@ -18,11 +18,14 @@ Primary automation: Python, run from the dedicated workspace.
 - `python-runner`: isolated Python automation with full system access.
   Delegate multi-step scripting or iterative script work here.
   Avoid delegating trivial one-liners.
-- `sysadmin`: Linux system administration for this machine (services,
-  packages, users, filesystems, networking, logs, kernel, SSH, boot,
-  hardware). Delegate multi-step operational work here. Do not use for
-  pure coding or Python scripting. Privileged commands go through
-  `sudo` and are gated by the policy engine.
+- `sysadmin`: Linux system administration **advisor / planner**.
+  Runs read-only diagnostics and returns a structured plan (commands
+  + verification + rollback). It does not execute privileged or
+  state-changing commands itself; you execute the plan in the main
+  session so the policy engine can prompt the user. Delegate
+  multi-step operational work here: services, packages, users,
+  filesystems, networking, logs, kernel, SSH, boot, hardware. Do
+  not use for pure coding or Python scripting.
 
 ## Operating style
 
