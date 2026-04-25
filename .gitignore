@@ -18,6 +18,7 @@ Thumbs.db
 **/oauth_creds.json
 **/trustedFolders.json
 **/projects.json
+**/projects.ini
 **/state.json
 **/extension_integrity.json
 **/tmp/

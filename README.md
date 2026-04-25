@@ -16,6 +16,8 @@ launcher. No fork of Gemini CLI, no patching - just configuration.
 - `~/.local/bin/gemini-agent`         launcher that exports `GEMINI_CLI_HOME` + `GEMINI_SYSTEM_MD`
 - `~/gemini-agent-workspace/`         Python workspace: venv, scripts/, tasks/, data/, logs/, scripts.md
 - `python-runner` subagent            isolated Python runner with full user-level system access
+- `sysadmin` advisor subagent         read-only Linux diagnostics that returns an execution plan to the parent
+- `project-hub` skill                 per-project wiki-lite memory hub (inbox, plan, knowledge) for projects anywhere on disk
 - YOLO mode + policy safety net       autonomous by default; destructive/privileged shell commands still prompt
 - Backup scripts                      `~/.gemini-agent/backup/backup.sh` and `restore.sh`
 
@@ -55,8 +57,9 @@ Authenticate when prompted.
 │       ├── settings.json
 │       ├── GEMINI.md
 │       ├── agents/python-runner.md
+│       ├── agents/sysadmin.md
 │       ├── policies/safety.toml
-│       └── skills/
+│       └── skills/project-hub/SKILL.md
 ├── workspace/                    -> installed to ~/gemini-agent-workspace/
 │   ├── README.md
 │   ├── requirements.txt
@@ -70,6 +73,7 @@ Authenticate when prompted.
 │   ├── architecture.md
 │   ├── subagents.md
 │   ├── safety-policy.md
+│   ├── project-hub.md
 │   ├── windows-wsl.md
 │   └── design-decisions.md
 ├── LICENSE                       MIT
