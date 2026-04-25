@@ -111,6 +111,40 @@ session, and stays compatible with whatever upstream does next: if
 subagent HITL ships, we can relax this without touching the parent's
 flow.
 
+## Why the launcher activates the workspace venv
+
+Python invocations in the agent session fall into two groups: calls that use
+an absolute path to the venv interpreter (reusable scripts, the
+`python-runner` subagent) and calls that use bare `python3` or `pip` (inline
+`python3 -c "..."` in skills, ad-hoc dependency installs). The second group
+resolves through `PATH`, which made execution non-deterministic:
+
+- Launched from a shell with the venv already active → `python3` was the
+  workspace interpreter, `pip install` landed in `venv/`.
+- Launched from a clean shell (fresh tty, cron, systemd, desktop shortcut) →
+  `python3` was `/usr/bin/python3`, `pip install` tried to write to system
+  site-packages and either polluted the system or failed on PEP 668.
+
+Three options were considered:
+
+1. **Rewrite every skill to use an absolute venv path.** Noisy, fragile,
+   and punishes users who add their own skills.
+2. **Require users to activate the venv before launching.** A footgun; the
+   error mode is silent (wrong packages, wrong interpreter version).
+3. **Activate the venv in the launcher.** One block of bash that front-loads
+   `$VENV/bin` on `PATH` and exports `VIRTUAL_ENV`. Every `python3` and
+   `pip` call in the session inherits it.
+
+Option 3 is the chosen default. Trade-offs:
+
+- If the venv directory is missing, the launcher skips activation and the
+  session falls back to system Python. This is the intended behavior for
+  first-run (before `install.sh` has created the venv) and for emergency
+  recovery.
+- The venv uses the system interpreter as its base (Python's `venv` module
+  always does), so upgrading system Python can invalidate the venv.
+  `install.sh` is idempotent and recreates the venv if needed.
+
 ## Why the repo ships templates, not user state
 
 Templates can be version-controlled, diffed, and shared. User state (oauth

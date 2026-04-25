@@ -13,7 +13,13 @@
 #      which would block the agent and its subagents from real system
 #      access. This profile is explicitly full-access; safety is
 #      provided by the policy engine, not by a sandbox.
-#   5. Avoid $HOME as the working directory. If Gemini is launched from
+#   5. Activate the workspace Python venv so `python3`, `pip`, and
+#      anything else the agent shells out to resolve to the workspace
+#      interpreter, not the system Python. Without this, skills and
+#      tool calls that use bare `python3` (e.g. project-hub capture)
+#      depend on whatever Python is first on the caller's PATH, which
+#      is non-deterministic and lets `pip install` pollute the system.
+#   6. Avoid $HOME as the working directory. If Gemini is launched from
 #      $HOME it picks up ~/.gemini/ (the default coding profile) as the
 #      workspace tier and bleeds its skills/settings into the session.
 #      When that happens, switch to the agent's dedicated workspace.
@@ -23,6 +29,14 @@ export GEMINI_CLI_HOME="${HOME}/.gemini-agent"
 export GEMINI_SYSTEM_MD="${HOME}/.gemini-agent/system.md"
 : "${GEMINI_SANDBOX:=false}"
 export GEMINI_SANDBOX
+
+VENV="${HOME}/gemini-agent-workspace/venv"
+if [ -d "$VENV" ]; then
+  export VIRTUAL_ENV="$VENV"
+  PATH="$VENV/bin:${PATH-}"
+  export PATH
+  unset PYTHONHOME
+fi
 
 if [ "$PWD" = "$HOME" ]; then
   WS="${HOME}/gemini-agent-workspace"

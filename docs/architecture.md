@@ -83,6 +83,42 @@ Long-running automation work happens through a dedicated Python workspace at
 - `logs/`, `data/` hold transient outputs.
 - `requirements.txt` is the source of truth for dependencies.
 
+## Python execution model
+
+The agent runs Python in four contexts; all resolve to the workspace venv:
+
+1. **Reusable scripts in `scripts/<name>/`** — invoked with the absolute
+   path to the venv interpreter (`~/gemini-agent-workspace/venv/bin/python`),
+   as spelled out in `system.md`.
+2. **The `python-runner` subagent** — its system prompt points it at the
+   workspace venv.
+3. **Inline `python3 -c "..."`** used by skills for lightweight work (for
+   example the `project-hub` inbox capture) — resolves through `PATH`.
+4. **`pip install <pkg>`** — resolves through `PATH`.
+
+Cases 3 and 4 used to be non-deterministic: if `gemini-agent` was launched
+from a shell where the venv was not active, `python3` and `pip` would point
+at the system interpreter, leaking packages into `/usr/lib/...` (or failing
+outright on PEP 668 distros) and using whatever Python version happened to
+be first on `PATH`.
+
+The launcher now activates the workspace venv unconditionally:
+
+```
+VENV="$HOME/gemini-agent-workspace/venv"
+if [ -d "$VENV" ]; then
+  export VIRTUAL_ENV="$VENV"
+  PATH="$VENV/bin:$PATH"
+  unset PYTHONHOME
+fi
+```
+
+Effect: every `python3`, `pip`, and `python`-launched tool in the agent's
+session, in its subagents, and in its shell tool calls uses the workspace
+venv. If the venv directory is missing, the launcher skips activation and
+the shell falls back to system defaults (used only during first-time
+install, before `install.sh` creates the venv).
+
 ## File ownership boundaries
 
 - The repo ships **templates** only. No secrets.
