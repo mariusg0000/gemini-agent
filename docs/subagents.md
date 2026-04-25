@@ -62,7 +62,9 @@ Body text: the agent's system prompt.
 - Isolated tool registry if `tools` is restricted.
 - Cannot recursively call other subagents.
 
-## Shipped subagent: python-runner
+## Shipped subagents
+
+### python-runner
 
 See `profile/.gemini/agents/python-runner.md`. Key points:
 
@@ -71,6 +73,26 @@ See `profile/.gemini/agents/python-runner.md`. Key points:
 - Enforces workspace conventions: `scripts/<slug>/`, `scripts.md`,
   `requirements.txt`, `tasks/<YYYY-MM-DD-slug>/`.
 - Returns only a concise summary to the parent.
+
+### sysadmin
+
+See `profile/.gemini/agents/sysadmin.md`. Key points:
+
+- Linux system administration specialist for this machine.
+- Full user-level system access; privileged commands go through `sudo`
+  and are gated by the policy engine (which will prompt for
+  confirmation on destructive or privileged operations).
+- Investigate-first workflow: detects the distro/init/package stack,
+  inspects current state, plans, acts, verifies.
+- Backs up any file edited in `/etc/` with a timestamped `.bak-*`
+  copy before modifying it.
+- Prefers dry-run flags where available (`apt --simulate`,
+  `systemctl --dry-run`, `nft -c`, `sshd -t`, `nginx -t`, `visudo -c`).
+- Scope: services, packages, users, filesystems, networking, logs,
+  kernel, security, boot, hardware, cron. Out of scope: Python
+  scripting (→ python-runner), application development, remote hosts
+  unless explicitly authorized.
+- Returns only a concise summary including any `.bak-*` paths created.
 
 ## Tuning
 
