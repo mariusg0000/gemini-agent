@@ -1,0 +1,4 @@
+# Gemini Agent workspace Python dependencies.
+# Add one per line. Keep this file in sync with what is installed.
+# Install with:
+#   ~/gemini-agent-workspace/venv/bin/pip install -r ~/gemini-agent-workspace/requirements.txt

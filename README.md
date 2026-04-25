@@ -1,0 +1,107 @@
+# gemini-agent
+
+A second, agentic profile for [Google Gemini CLI](https://github.com/google-gemini/gemini-cli)
+that runs side-by-side with the default `gemini` command, without polluting it.
+
+- `gemini`       stays clean, for coding.
+- `gemini-agent` is an autonomous general-purpose profile with Python
+  scripting, skills, subagents, and a dedicated workspace.
+
+Isolation is achieved by setting `GEMINI_CLI_HOME` and `GEMINI_SYSTEM_MD` per
+launcher. No fork of Gemini CLI, no patching - just configuration.
+
+## What you get after install
+
+- `~/.gemini-agent/`                  agentic profile (settings, GEMINI.md, system.md, skills, subagents)
+- `~/.local/bin/gemini-agent`         launcher that exports `GEMINI_CLI_HOME` + `GEMINI_SYSTEM_MD`
+- `~/gemini-agent-workspace/`         Python workspace: venv, scripts/, tasks/, data/, logs/, scripts.md
+- `python-runner` subagent            isolated Python runner with full user-level system access
+- Backup scripts                      `~/.gemini-agent/backup/backup.sh` and `restore.sh`
+
+Your existing `~/.gemini` profile is not touched.
+
+## Requirements
+
+- Gemini CLI installed and working (`gemini --version`)
+- Python 3 with venv support: `sudo apt install python3 python3-venv python3-pip`
+- `~/.local/bin` on your `PATH`
+
+## Install
+
+```
+git clone <repo-url> gemini-agent
+cd gemini-agent
+./install.sh
+```
+
+First launch:
+
+```
+gemini-agent
+```
+
+Authenticate when prompted.
+
+## Layout of the repo
+
+```
+.
+├── bin/gemini-agent              launcher
+├── profile/                      -> installed to ~/.gemini-agent/
+│   ├── system.md
+│   ├── backup/
+│   └── .gemini/
+│       ├── settings.json
+│       ├── GEMINI.md
+│       ├── agents/python-runner.md
+│       └── skills/
+├── workspace/                    -> installed to ~/gemini-agent-workspace/
+│   ├── README.md
+│   ├── requirements.txt
+│   ├── scripts.md
+│   └── scripts/
+│       ├── _template/
+│       └── hello-env/
+├── install.sh
+├── uninstall.sh
+├── docs/
+│   ├── architecture.md
+│   ├── subagents.md
+│   └── design-decisions.md
+├── LICENSE                       MIT
+└── README.md
+```
+
+## Customize after install
+
+- Edit behavior:       `~/.gemini-agent/system.md`, `~/.gemini-agent/.gemini/GEMINI.md`
+- Add skills:          `~/.gemini-agent/.gemini/skills/<name>/SKILL.md`
+- Add subagents:       `~/.gemini-agent/.gemini/agents/<name>.md`
+- Add scripts:         `~/gemini-agent-workspace/scripts/<name>/` and register in `scripts.md`
+- Pin deps:            `~/gemini-agent-workspace/requirements.txt`
+
+## Personal backup and restore
+
+The repo installs templates. Your personal data (oauth token, trusted folders,
+project mapping, the scripts you create, the logs you accumulate) stays on your
+machine only. Two helper scripts handle backup and restore across a system
+reinstall:
+
+```
+bash ~/.gemini-agent/backup/backup.sh
+bash ~/.gemini-agent/backup/restore.sh
+```
+
+See `~/.gemini-agent/backup/README.md` for details.
+
+## Safety notes
+
+- `python-runner` is configured with `tools: ["*"]` and full user-level access
+  to the system. It can read and write anywhere the user can. Review its
+  instructions in `profile/.gemini/agents/python-runner.md` before installing.
+- OAuth credentials are never included in this repo. They live only in
+  `~/.gemini-agent/.gemini/oauth_creds.json` after you sign in.
+
+## License
+
+MIT. See `LICENSE`.

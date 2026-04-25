@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Personal / secret data that must never ship with this repo
+**/oauth_creds.json
+**/trustedFolders.json
+**/projects.json
+**/state.json
+**/extension_integrity.json
+**/tmp/
+**/history/
+**/logs/
+**/tasks/*/
+!**/tasks/.gitkeep
+**/data/*
+!**/data/.gitkeep
+
+# Backup tarballs
+*.tar.gz
+*.tgz
+*.zip
+
+# Local-only overrides
+.env
+.env.*
+local.*
+*.local.md

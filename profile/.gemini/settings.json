@@ -1,0 +1,61 @@
+{
+  "security": {
+    "auth": {
+      "selectedType": "oauth-personal"
+    }
+  },
+  "ide": {
+    "hasSeenNudge": true,
+    "enabled": true
+  },
+  "ui": {
+    "theme": "Dracula",
+    "footer": {
+      "items": [
+        "workspace",
+        "git-branch",
+        "sandbox",
+        "model-name",
+        "quota",
+        "context-used",
+        "token-count"
+      ],
+      "hideContextPercentage": false
+    },
+    "showModelInfoInChat": true
+  },
+  "profiles": {
+    "planning": {
+      "temperature": 0.2,
+      "system_instruction": "Mod: PLANNING. Analizeaza arhitectura si riscurile. Nu genera cod implementabil. Listeaza dependentele si pasii logici. Solicita feedback dupa fiecare punct.",
+      "tools": [
+        "google_search"
+      ]
+    },
+    "coding": {
+      "temperature": 0.1,
+      "system_instruction": "Mod: CODING. Explica logica functiei inainte de a scrie blocul de cod. Foloseste Type Hints. Nu executa scripturi in terminal fara confirmare explicita.",
+      "tools": [
+        "code_interpreter",
+        "file_system"
+      ]
+    }
+  },
+  "session": {
+    "auto_resume": true,
+    "persist_history": true
+  },
+  "general": {
+    "defaultApprovalMode": "plan"
+  },
+  "model": {
+    "name": "",
+    "compressionThreshold": 0.25
+  },
+  "experimental": {
+    "enableAgents": true
+  },
+  "skills": {
+    "enabled": true
+  }
+}
