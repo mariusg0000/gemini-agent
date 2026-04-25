@@ -1,22 +1,48 @@
 #!/usr/bin/env bash
 # Launcher for the agentic Gemini CLI profile.
 #
-# Reroutes user-level config to ~/.gemini-agent/ and forces a dedicated
-# system prompt. The default `gemini` command is not affected.
-#
-# Side-effect: when launched from $HOME, we cd into the agent's
-# workspace first. Otherwise Gemini CLI picks up $HOME/.gemini/ (the
-# default coding profile) as the "workspace" tier for skills/settings
-# and it bleeds into the agent session.
+# Responsibilities:
+#   1. Reroute user-level config to ~/.gemini-agent/ so the default
+#      `gemini` profile is not touched.
+#   2. Force a dedicated system prompt via GEMINI_SYSTEM_MD.
+#   3. Default approval mode to `yolo` so ordinary tool calls run
+#      without a UI prompt. The policy engine
+#      (~/.gemini-agent/.gemini/policies/safety.toml) is the safety net
+#      for destructive or privileged shell commands.
+#   4. Disable sandboxing. YOLO auto-enables the sandbox by default,
+#      which would block the agent and its subagents from real system
+#      access. This profile is explicitly full-access; safety is
+#      provided by the policy engine, not by a sandbox.
+#   5. Avoid $HOME as the working directory. If Gemini is launched from
+#      $HOME it picks up ~/.gemini/ (the default coding profile) as the
+#      workspace tier and bleeds its skills/settings into the session.
+#      When that happens, switch to the agent's dedicated workspace.
 set -euo pipefail
 
 export GEMINI_CLI_HOME="${HOME}/.gemini-agent"
 export GEMINI_SYSTEM_MD="${HOME}/.gemini-agent/system.md"
+: "${GEMINI_SANDBOX:=false}"
+export GEMINI_SANDBOX
 
 if [ "$PWD" = "$HOME" ]; then
   WS="${HOME}/gemini-agent-workspace"
   mkdir -p "$WS"
   cd "$WS"
+fi
+
+# If the user did not already specify an approval mode, default to yolo.
+want_default_approval=1
+for arg in "$@"; do
+  case "$arg" in
+    --yolo|--approval-mode|--approval-mode=*)
+      want_default_approval=0
+      break
+      ;;
+  esac
+done
+
+if [ "$want_default_approval" -eq 1 ]; then
+  set -- --approval-mode=yolo "$@"
 fi
 
 exec gemini "$@"

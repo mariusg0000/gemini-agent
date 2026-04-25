@@ -46,7 +46,7 @@
     "persist_history": true
   },
   "general": {
-    "defaultApprovalMode": "yolo"
+    "defaultApprovalMode": "default"
   },
   "model": {
     "name": "",

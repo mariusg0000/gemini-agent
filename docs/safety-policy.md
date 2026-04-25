@@ -3,8 +3,24 @@
 `gemini-agent` defaults to `yolo` approval mode: ordinary tool calls run
 without a UI confirmation prompt, so the agent is fluid and autonomous.
 
-The policy engine is the safety net. It inspects every tool call
-(especially `run_shell_command`) and can return one of three decisions:
+## How YOLO is set
+
+YOLO mode is only enablable via CLI flag (`general.defaultApprovalMode`
+in `settings.json` does not accept `yolo`, it is restricted to
+`default | auto_edit | plan`). The launcher therefore appends
+`--approval-mode=yolo` unless the user has already passed an approval
+flag.
+
+The launcher also sets `GEMINI_SANDBOX=false` (unless the user
+overrides it). Gemini CLI auto-enables sandboxing when YOLO is on; for
+this profile we explicitly want full system access (the `python-runner`
+and future `sysadmin` subagents depend on it), so we turn the sandbox
+off and rely on the policy engine for safety instead.
+
+## Decisions
+
+The policy engine inspects every tool call (especially
+`run_shell_command`) and returns one of three decisions:
 
 | Decision   | Effect                                                   |
 | ---------- | -------------------------------------------------------- |
@@ -78,6 +94,23 @@ when you need alternation or character classes. Do not use `^` or `$`
 anchors: they apply to the full JSON argument string, not to the
 command. The engine already anchors the match at the start of the
 command.
+
+Gemini CLI also runs a ReDoS safety check on every regex. Avoid:
+
+- Nested quantifiers in groups, e.g. `(X+)?`, `(X*)*`, `(X+)*`.
+- Overlapping `*`-quantified character classes around a literal whose
+  characters are also in the class, e.g. `[a-zA-Z]*r[a-zA-Z]*` — this
+  can trigger polynomial backtracking.
+
+Prefer restricted character classes that don't overlap with neighboring
+literals. For example, to match an `rm` flag cluster that contains
+either `r` or `R`:
+
+```toml
+commandRegex = 'rm[[:space:]]+-[fivIVF]*[rR][fivIVF]*'
+```
+
+`[fivIVF]` shares no characters with `[rR]`, so the regex is linear.
 
 ```toml
 [[rule]]

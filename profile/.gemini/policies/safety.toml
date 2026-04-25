@@ -15,6 +15,10 @@
 #   - `commandRegex` matches the command from its start (no `^`
 #     anchor needed). Avoid `^` and `$` anchors: those apply to the
 #     full JSON representation of arguments, not the command itself.
+#   - Gemini CLI runs a ReDoS safety check on every regex. Avoid
+#     nested quantifiers in groups, e.g. `(X+)?` or `(X*)*`. Prefer
+#     single-level quantifiers or restricted character classes that
+#     don't overlap with neighboring literals.
 #   - Higher `priority` wins over lower priority within the same tier.
 #   - User rules (this file) override the YOLO allow-all default.
 
@@ -22,15 +26,43 @@
 # Hard blocks: catastrophic, not-even-ask
 # ---------------------------------------------------------------------------
 
-# rm -rf / (and variants like -fr, / trailing space, /*, etc.)
+# rm with any short flag cluster, targeting the root filesystem `/`.
+# Matches e.g. `rm -rf /`, `rm -Rf /*`, `rm -rfv / --no-preserve-root`.
+# The trailing character class ensures we only block `/` as a root target,
+# not `/home/foo` (which starts with `/` followed by a letter).
 [[rule]]
 toolName = "run_shell_command"
-commandRegex = 'rm[[:space:]]+([^|;&]*[[:space:]]+)?-[a-zA-Z]*(rf|fr)[a-zA-Z]*[[:space:]]+(/|/[[:space:]]|/\*|/ )'
+commandRegex = 'rm[[:space:]]+-[a-zA-Z]+[[:space:]]+/[[:space:]"*]'
 decision = "deny"
 priority = 200
-denyMessage = "Blocked: recursive delete targeting root filesystem is never allowed."
+denyMessage = "Blocked: recursive delete targeting the root filesystem is never allowed."
 
-# Write raw bytes to a block device
+# rm with long flags: --recursive --force /  (either order).
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'rm[[:space:]]+(--recursive[[:space:]]+--force|--force[[:space:]]+--recursive)[[:space:]]+/[[:space:]"*]'
+decision = "deny"
+priority = 200
+denyMessage = "Blocked: recursive delete targeting the root filesystem is never allowed."
+
+# Any rm invocation using --no-preserve-root. This flag only makes sense
+# when deliberately targeting the root filesystem, so it is catastrophic.
+[[rule]]
+toolName = "run_shell_command"
+commandPrefix = [
+  "rm -rf --no-preserve-root",
+  "rm -fr --no-preserve-root",
+  "rm -Rf --no-preserve-root",
+  "rm -fR --no-preserve-root",
+  "rm --recursive --force --no-preserve-root",
+  "rm --force --recursive --no-preserve-root",
+  "rm --no-preserve-root",
+]
+decision = "deny"
+priority = 200
+denyMessage = "Blocked: --no-preserve-root is only used to target the root filesystem."
+
+# Write raw bytes to a block device.
 [[rule]]
 toolName = "run_shell_command"
 commandRegex = 'dd[[:space:]].*of=/dev/(sd|nvme|hd|mmcblk|vd|xvd|loop)'
@@ -38,15 +70,16 @@ decision = "deny"
 priority = 200
 denyMessage = "Blocked: dd to a block device would destroy data."
 
-# Create a filesystem on a device (format/erase)
+# Create a filesystem on a device (format/erase). `mkfs` covers bare
+# `mkfs` and all `mkfs.ext4`, `mkfs.btrfs`, `mkfs.xfs`, etc. variants.
 [[rule]]
 toolName = "run_shell_command"
-commandRegex = 'mkfs(\.[a-zA-Z0-9]+)?[[:space:]]'
+commandPrefix = "mkfs"
 decision = "deny"
 priority = 200
 denyMessage = "Blocked: mkfs would erase a filesystem."
 
-# Partition table manipulation
+# Partition table manipulation.
 [[rule]]
 toolName = "run_shell_command"
 commandPrefix = ["fdisk ", "sfdisk ", "parted ", "gdisk ", "wipefs "]
@@ -54,7 +87,7 @@ decision = "deny"
 priority = 200
 denyMessage = "Blocked: disk partitioning tool."
 
-# Shred / wipe entire device
+# Shred / wipe entire device.
 [[rule]]
 toolName = "run_shell_command"
 commandRegex = 'shred[[:space:]]+.*/dev/'
@@ -148,22 +181,23 @@ priority = 120
 
 [[rule]]
 toolName = "run_shell_command"
-commandPrefix = ["dpkg -i ", "dpkg --install ", "dpkg -r ", "dpkg --remove ", "dpkg -P ", "dpkg --purge ", "rpm -i ", "rpm -U ", "rpm -e "]
+commandPrefix = [
+  "dpkg -i ", "dpkg --install ",
+  "dpkg -r ", "dpkg --remove ",
+  "dpkg -P ", "dpkg --purge ",
+  "rpm -i ", "rpm -U ", "rpm -e ",
+]
 decision = "ask_user"
 priority = 120
 
-# Global pip / npm / gem / cargo installs (should use project-local venvs)
+# Language-package installers (often touch system state or a venv).
+# `pip install ...`, `pip3 install ...`. sudo pip is already caught by
+# the `sudo ` prefix rule above.
 [[rule]]
 toolName = "run_shell_command"
-commandRegex = 'pip[23]?[[:space:]]+install([[:space:]]+-[^[:space:]]+)*[[:space:]]+--user'
+commandRegex = 'pip[23]?[[:space:]]+install'
 decision = "ask_user"
 priority = 110
-
-[[rule]]
-toolName = "run_shell_command"
-commandRegex = '(sudo[[:space:]]+)?pip[23]?[[:space:]]+install'
-decision = "ask_user"
-priority = 105
 
 [[rule]]
 toolName = "run_shell_command"
@@ -175,28 +209,37 @@ priority = 110
 # Confirm: destructive filesystem operations
 # ---------------------------------------------------------------------------
 
-# Any recursive rm: -r, -R, --recursive, combined with -f or not.
+# rm with short flags that include -r or -R. The restricted character
+# class [fivIVF] does not overlap with [rR], so no nested-quantifier
+# ambiguity. Covers e.g. -r, -R, -rf, -fr, -Rf, -fR, -rfv, -vRf, -ri, -ir.
 [[rule]]
 toolName = "run_shell_command"
-commandRegex = 'rm[[:space:]]+([^|;&]*[[:space:]]+)?(--recursive|-[a-zA-Z]*r[a-zA-Z]*|-[a-zA-Z]*R[a-zA-Z]*)'
+commandRegex = 'rm[[:space:]]+-[fivIVF]*[rR][fivIVF]*'
 decision = "ask_user"
 priority = 100
 
-# Recursive chown/chgrp
+# rm with long --recursive flag.
+[[rule]]
+toolName = "run_shell_command"
+commandPrefix = "rm --recursive"
+decision = "ask_user"
+priority = 100
+
+# Recursive chown/chgrp.
 [[rule]]
 toolName = "run_shell_command"
 commandRegex = '(chown|chgrp)[[:space:]]+(-[a-zA-Z]*R[a-zA-Z]*|--recursive)'
 decision = "ask_user"
 priority = 100
 
-# Recursive chmod
+# Recursive chmod.
 [[rule]]
 toolName = "run_shell_command"
 commandRegex = 'chmod[[:space:]]+(-[a-zA-Z]*R[a-zA-Z]*|--recursive)'
 decision = "ask_user"
 priority = 100
 
-# Truncate / zero out a file in-place
+# Truncate / zero out a file in-place.
 [[rule]]
 toolName = "run_shell_command"
 commandRegex = ':[[:space:]]*>[[:space:]]*/|truncate[[:space:]]+-s[[:space:]]+0'
@@ -261,15 +304,23 @@ priority = 120
 # Confirm: git force / history rewrite
 # ---------------------------------------------------------------------------
 
+# git push --force or --force-with-lease anywhere in the args.
 [[rule]]
 toolName = "run_shell_command"
-commandRegex = 'git[[:space:]]+push[[:space:]]+([^|;&]*[[:space:]]+)?(--force(-with-lease)?|-f\b)'
+commandRegex = 'git[[:space:]]+push[^|;&]*--force'
+decision = "ask_user"
+priority = 120
+
+# git push with short -f flag.
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'git[[:space:]]+push[^|;&]*[[:space:]]-f[[:space:]"]'
 decision = "ask_user"
 priority = 120
 
 [[rule]]
 toolName = "run_shell_command"
-commandRegex = 'git[[:space:]]+(reset[[:space:]]+--hard|clean[[:space:]]+-[a-zA-Z]*[dfx]|filter-branch|filter-repo)'
+commandRegex = 'git[[:space:]]+(reset[[:space:]]+--hard|clean[[:space:]]+-[a-zA-Z]|filter-branch|filter-repo)'
 decision = "ask_user"
 priority = 110
 

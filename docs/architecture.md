@@ -49,7 +49,12 @@ system prompt. The launcher also sets `GEMINI_SYSTEM_MD=$HOME/.gemini-agent/syst
 ## Approval model and policy engine
 
 Default approval mode is `yolo`. Ordinary tool calls execute without a UI
-prompt so the agent is fluid and autonomous.
+prompt so the agent is fluid and autonomous. The launcher appends
+`--approval-mode=yolo` (since `settings.json` only accepts
+`default | auto_edit | plan` for `general.defaultApprovalMode`) and sets
+`GEMINI_SANDBOX=false` (so the sandbox that YOLO would otherwise
+auto-enable does not cut off the agent's access to the real filesystem
+and tools).
 
 The safety net is Gemini CLI's policy engine:
 
