@@ -61,7 +61,7 @@
   "agents": {
     "overrides": {
       "codebase_investigator": {
-        "disabled": true
+        "enabled": false
       }
     }
   }
