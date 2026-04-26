@@ -118,7 +118,9 @@ Your existing `~/.gemini` profile is not touched.
 ## Requirements
 
 - Gemini CLI installed and working (`gemini --version`)
-- Python 3 with venv support: `sudo apt install python3 python3-venv python3-pip`
+- Python 3 with venv support:
+  - Debian/Ubuntu: `sudo apt install python3 python3-venv python3-pip`
+  - Fedora: `sudo dnf install python3 python3-pip`
 - `~/.local/bin` on your `PATH`
 
 ## Install
@@ -214,8 +216,8 @@ See `~/.gemini-agent/backup/README.md` for details.
 ## Windows
 
 `gemini-agent` is Linux-first. The launcher is bash, the policy rules
-cover POSIX shell tooling (`sudo`, `apt`, `systemctl`, etc.), and the
-`sysadmin` subagent is written for a systemd/Debian-style environment.
+cover POSIX shell tooling (`sudo`, `apt`, `dnf`, `systemctl`, etc.), and the
+`sysadmin` subagent is written for a systemd-based environment (Debian/Ubuntu, Fedora/RHEL).
 None of that runs natively on Windows.
 
 The supported path on Windows is WSL2 (Windows Subsystem for Linux).
@@ -224,6 +226,8 @@ this repo works unchanged. A step-by-step tutorial from a blank
 Windows 10 / 11 to a working `gemini-agent` command is in:
 
 [`docs/windows-wsl.md`](docs/windows-wsl.md)
+
+*(For using Fedora in WSL, see [`docs/fedora.md`](docs/fedora.md))*
 
 ## License
 

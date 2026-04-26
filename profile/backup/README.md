@@ -1,7 +1,7 @@
 # Gemini Agent: backup and restore
 
 This file documents why `gemini-agent` exists, what it consists of, and how to
-back it up and restore it across a system reinstall (Ubuntu or Debian).
+back it up and restore it across a system reinstall (Ubuntu, Debian, or Fedora).
 
 ---
 

@@ -30,7 +30,7 @@ msg "Checking prerequisites"
 
 command -v gemini >/dev/null 2>&1 || die "gemini CLI not found on PATH. Install it first."
 command -v python3 >/dev/null 2>&1 || die "python3 not found."
-python3 -c "import venv" >/dev/null 2>&1 || die "python3 venv module not available. On Debian/Ubuntu: sudo apt install python3-venv"
+python3 -c "import venv" >/dev/null 2>&1 || die "python3 venv module not available. On Debian/Ubuntu: sudo apt install python3-venv. On Fedora: sudo dnf install python3 python3-pip"
 
 case ":$PATH:" in
   *":$HOME/.local/bin:"*) ;;
