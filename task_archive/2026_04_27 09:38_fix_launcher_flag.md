@@ -1,0 +1,3 @@
+- [x] Fix launcher workspace flag error
+  - [x] Remove `--workspace` logic from `bin/gemini-agent`
+  - [x] Update active launcher in `~/.local/bin/gemini-agent`

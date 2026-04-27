@@ -1,0 +1,1 @@
+- [x] Document workspace expansion in README.md

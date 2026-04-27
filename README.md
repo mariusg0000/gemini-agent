@@ -107,11 +107,9 @@ you do, because the meter is running.
 - `~/.gemini-agent/`                  agentic profile (settings, GEMINI.md, system.md, skills, subagents)
 - `~/.local/bin/gemini-agent`         launcher that exports `GEMINI_CLI_HOME` + `GEMINI_SYSTEM_MD`
 - `~/gemini-agent-workspace/`         Python workspace: venv, scripts/, tasks/, data/, logs/, scripts.md
-- `python-runner` subagent            isolated Python runner with full user-level system access
-- `sysadmin` advisor subagent         read-only Linux diagnostics that returns an execution plan to the parent
-- `brain` high-reasoning subagent     complex logic and deep analysis specialist (Gemini 3.1 Pro)
-- `project-hub` skill                 per-project wiki-lite memory hub (inbox, plan, knowledge) for projects anywhere on disk
-- YOLO mode + policy safety net       autonomous by default; destructive/privileged shell commands still prompt
+- **Specialized Subagents**           [`python-runner`](profile/.gemini/agents/python-runner.md), [`sysadmin`](docs/subagents.md), [`brain`](docs/agents/brain.md)
+- **Agent Skills**                    [`project-hub`](docs/project-hub.md)
+- YOLO mode + policy safety net       [`docs/safety-policy.md`](docs/safety-policy.md)
 - Backup scripts                      `~/.gemini-agent/backup/backup.sh` and `restore.sh`
 
 Your existing `~/.gemini` profile is not touched.

@@ -1,0 +1,5 @@
+- [x] Final sync of all profiles
+  - [x] Sync `profile/system.md` to `~/.gemini-agent/system.md`
+  - [x] Sync `profile/.gemini/agents/brain.md` to `~/.gemini-agent/.gemini/agents/brain.md`
+  - [x] Sync `profile/.gemini/agents/brain.md` to `~/.gemini/agents/brain.md`
+  - [x] Sync `bin/gemini-agent` to `~/.local/bin/gemini-agent`

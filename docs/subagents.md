@@ -128,6 +128,19 @@ See `profile/.gemini/agents/sysadmin.md`. Key points:
 The parent does not forward the plan to the user as the final
 answer. It executes the plan.
 
+### brain (high-reasoning specialist)
+
+See `docs/agents/brain.md` and `profile/.gemini/agents/brain.md`. Key points:
+
+- High-reasoning specialist (`gemini-3.1-pro-preview`) for complex logic and
+  deep analysis.
+- Follows the **Orchestrator -> specialist** loop: the parent gathers
+  context and displays a summary before delegating.
+- Returns a comprehensive response with a mandatory **Tools & Process Log**
+  for auditability.
+- Use for: logic audits, architectural design, root cause analysis,
+  compliance verification.
+
 ## Tuning
 
 If a subagent is called too often or too rarely, the lever is the `description`

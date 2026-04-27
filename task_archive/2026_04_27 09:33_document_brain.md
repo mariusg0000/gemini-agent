@@ -1,0 +1,1 @@
+- [x] Document brain subagent in README.md

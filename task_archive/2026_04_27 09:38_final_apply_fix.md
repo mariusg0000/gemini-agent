@@ -1,0 +1,4 @@
+- [x] Apply fixed updates to gemini-agent profile
+  - [x] Sync fixed `bin/gemini-agent` to `~/.local/bin/gemini-agent`
+  - [x] Sync `profile/system.md` to `~/.gemini-agent/system.md`
+  - [x] Sync `profile/.gemini/agents/brain.md` to `~/.gemini-agent/.gemini/agents/brain.md`
