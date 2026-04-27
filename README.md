@@ -183,6 +183,38 @@ Authenticate when prompted.
 - Add scripts:         `~/gemini-agent-workspace/scripts/<name>/` and register in `scripts.md`
 - Pin deps:            `~/gemini-agent-workspace/requirements.txt`
 
+## Expanding Workspace Access
+
+By default, Gemini CLI internal tools (like `ReadFile`, `ReadFolder`, `SearchText`) are
+restricted to the current working directory for safety. If you want the agent
+to have native, high-performance access to other folders (e.g., a data drive or
+your entire home directory) without falling back to slower shell commands,
+you must configure two files in your profile:
+
+1.  **Add to Context (`~/.gemini-agent/.gemini/settings.json`)**:
+    Add the paths to the `context.includeDirectories` array. This tells the
+    agent that these folders are part of its potential workspace.
+    ```json
+    "context": {
+      "includeDirectories": ["/mnt/DATA/Work/AI/", "~"],
+      "loadMemoryFromIncludeDirectories": true
+    }
+    ```
+2.  **Grant Trust (`~/.gemini-agent/.gemini/trustedFolders.json`)**:
+    Internal tools will still block access unless the folder is "Trusted."
+    You can trust a broad path by adding it to this JSON file:
+    ```json
+    {
+      "/mnt/DATA/": "TRUST_FOLDER",
+      "/home/marius/": "TRUST_FOLDER"
+    }
+    ```
+
+**Note:** The `gemini-agent` launcher automatically detects your current
+directory and passes it as the primary workspace via the `--workspace` flag.
+This ensures that internal tools work natively on whatever project you are
+currently in.
+
 ## Personal backup and restore
 
 The repo installs templates. Your personal data (oauth token, trusted folders,
