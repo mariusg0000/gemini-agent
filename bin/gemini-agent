@@ -44,27 +44,16 @@ if [ "$PWD" = "$HOME" ]; then
   cd "$WS"
 fi
 
-# Ensure the current folder is treated as the workspace so internal tools
-# like ReadFolder/ReadFile work natively on absolute paths relative to CWD.
-CURRENT_WS=$(pwd)
-
 # If the user did not already specify an approval mode, default to yolo.
 want_default_approval=1
-want_workspace_flag=1
 for arg in "$@"; do
   case "$arg" in
     --yolo|--approval-mode|--approval-mode=*)
       want_default_approval=0
-      ;;
-    --workspace|--workspace=*)
-      want_workspace_flag=0
+      break
       ;;
   esac
 done
-
-if [ "$want_workspace_flag" -eq 1 ]; then
-  set -- --workspace="$CURRENT_WS" "$@"
-fi
 
 if [ "$want_default_approval" -eq 1 ]; then
   set -- --approval-mode=yolo "$@"
