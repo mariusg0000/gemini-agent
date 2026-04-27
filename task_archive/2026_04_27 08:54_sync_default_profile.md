@@ -1,0 +1,3 @@
+- [x] Sync updates to default gemini profile
+  - [x] Copy `brain.md` to `~/.gemini/agents/brain.md`
+  - [x] Update `~/.gemini/GEMINI.md` workflow instructions

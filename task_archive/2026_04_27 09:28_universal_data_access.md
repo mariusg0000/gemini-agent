@@ -1,0 +1,5 @@
+- [x] Enable universal data access
+  - [x] Add `/mnt/DATA/` and `~` to `settings.json` (includeDirectories)
+  - [x] Add `/mnt/DATA/` to `trustedFolders.json`
+  - [x] Update launcher `bin/gemini-agent` with dynamic workspace logic
+  - [x] Update repository templates for future installs

@@ -1,0 +1,4 @@
+- [x] Run @brain verbosity and logic test
+  - [x] Create test files (`checkout.py`, `promotions.yaml`, `business_rules.md`)
+  - [x] Generate and display summary
+  - [x] Invoke @brain and verify verbose output
