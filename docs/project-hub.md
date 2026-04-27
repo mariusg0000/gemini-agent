@@ -1,107 +1,68 @@
 # project-hub skill
 
-`project-hub` is a shipped skill that gives `gemini-agent` a persistent,
-per-project Obsidian-friendly memory layer. It mirrors the wiki-lite
-structure used in the Hermes agent, ported to Gemini CLI.
+`project-hub` is a persistent, per-project memory layer. It ensures that your ideas, plans, and decisions stay with your project files on disk, rather than being lost in a generic chat history.
 
-## When it activates
+## 🚀 Tutorial: Getting Started with Project Hubs
 
-The main agent loads the skill when the user mentions any of:
+### 1. Initialize a Project
+To start managing a project, you first need to register it.
+> **You:** "Open project-hub for my new game 'Angry Towers' in /mnt/DATA/Work/AI/AngryTowers"
 
-- `project-hub`, `project`
-- `open project`, `resume project`, `init project`
-- `inbox`, `add to inbox`, `process inbox`, `integrate notes`
-- Romanian equivalents: `deschide project`, `reia project`,
-  `proceseaza inbox`, `integreaza notite`, `adauga in inbox`, etc.
+The agent will:
+1.  Register the project in `~/.gemini-agent/projects.ini`.
+2.  Create a `project-hub/` folder inside your game directory.
+3.  Scaffold the core files: `00-home.md`, `01-current.md`, `02-inbox.md`, `03-plan.md`, and `04-knowledge.md`.
 
-Passive-capture triggers (`I have an idea`, `note this`, `am o idee`,
-`noteaza asta`, ...) append the whole user message to the current
-project's inbox and return to the main task immediately.
+### 2. Passive Capture (The "Inbox")
+Whenever you have a random idea or observation, just mention it. You don't need to be in the project context.
+> **You:** "Am o idee: we should use a custom shader for the tower explosions in Angry Towers."
 
-## What it creates
+The agent will automatically identify the project and append your note to `project-hub/02-inbox.md`. It won't interrupt your current work.
 
-For each managed project:
+### 3. Review and Integrate
+When you are ready to work on the project, ask the agent to "Process the inbox."
+> **You:** "Open project Angry Towers and process the inbox."
+
+The agent will:
+1.  Read your raw notes from `02-inbox.md`.
+2.  Propose how to move them:
+    -   Tasks go to `03-plan.md`.
+    -   Facts/Decisions go to `04-knowledge.md`.
+    -   The dashboard summary in `00-home.md` is updated.
+3.  Clear the inbox once integrated.
+
+### 4. Continuous Planning
+As you finish tasks, the agent maintains the plan.
+> **You:** "I finished the multiplayer relay. What's next for Angry Towers?"
+
+The agent will check `03-plan.md`, mark the relay as `Done` (with a timestamp), and present the next item in the `Next` list.
+
+---
+
+## 📂 Structure
 
 ```
 <project-root>/
-  README.md
   project-hub/
-    00-home.md        dashboard summary
-    01-current.md     current focus, next step, blockers
-    02-inbox.md       write-only raw capture
-    03-plan.md        Active / Next / Later / Postponed / Canceled / Done
-    04-knowledge.md   stable decisions, facts, conventions
-    assets/           screenshots, PDFs, attachments
+    00-home.md        Dashboard (Goals, Tech Stack, Progress)
+    01-current.md     Active focus and immediate blockers
+    02-inbox.md       Write-only capture for raw thoughts
+    03-plan.md        The Task Matrix (Active, Next, Done, etc.)
+    04-knowledge.md   Stable facts, architecture decisions, and conventions
 ```
 
-Project hubs live inside the user's actual project folders (wherever
-they already are on disk), not inside `~/gemini-agent-workspace/`. The
-workspace is for agent-produced Python scripts and task scratch; the
-hub is for human-owned project memory.
+## 🛠️ Configuration
 
-## Registry
-
-The registry of known projects is a single INI file at:
-
-```
-~/.gemini-agent/projects.ini
-```
-
-Format:
+The registry is stored at `~/.gemini-agent/projects.ini`. You can manually edit this file to add aliases or change paths:
 
 ```ini
 [angrytower]
 path=/mnt/DATA/Work/AI/AngryTowers
 desc=Godot port and multiplayer relay implementation
-aliases=angry towers
-status=active
+aliases=angry towers, towers, game
 ```
 
-- `path` is the project root (the folder that contains `project-hub/`).
-- `aliases` is optional, comma-separated.
-- Matching is case-insensitive against section names and aliases.
-- The file is auto-created by the skill on first use.
-
-## Why the registry lives outside the repo
-
-`projects.ini` contains absolute paths that are personal machine
-state, so it is gitignored (see `.gitignore`). The skill code ships
-in the repo; the registry does not. Installing on a new machine
-starts with an empty registry; running `open project-hub on <name>`
-for the first time registers it.
-
-## Interaction with the policy engine
-
-Project-hub operations are file-level and do not trigger the policy
-engine:
-
-- Markdown writes and edits go through `write_file` / `edit_file`, not
-  through the shell.
-- Inbox appends use a short inline `python3 -c "..."`. `python3` is
-  not on the policy list, so captures are silent.
-- `mkdir -p` is not policy-guarded.
-
-If a user ever asks the agent to create a hub inside a path that
-requires `sudo`, the skill stops and reports. Project hubs belong in
-user-writable folders.
-
-## Safety rules built into the skill
-
-- Inbox is write-only during normal work. It is read only when the
-  user explicitly runs an integration.
-- Each task exists in exactly one section of `03-plan.md` at a time;
-  timestamps are preserved when tasks move to `Done`, `Postponed`,
-  or `Canceled`.
-- After writing any critical file, the skill reads it back and halts
-  if content does not match.
-- Ambiguous inbox notes stay in the inbox; the skill never empties
-  the inbox wholesale.
-- The skill does not fabricate content to fill empty sections.
-
-## Related
-
-- `docs/subagents.md` — the subagents (`python-runner`, `sysadmin`).
-  Heavy batch integrations can be delegated to `python-runner` if an
-  inbox grows large.
-- `docs/safety-policy.md` — why file tools stay outside the policy
-  engine while shell commands go through it.
+## Safety Rules
+- **No Fabrication**: The agent only documents what you tell it or what it observes in the code.
+- **Verification**: After every update, the agent reads the hub files back to ensure no data was corrupted.
+- **User Ownership**: The hub belongs to you. You can open these Markdown files in any editor (like Obsidian or VS Code) and edit them manually.

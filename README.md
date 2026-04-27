@@ -107,7 +107,7 @@ you do, because the meter is running.
 - `~/.gemini-agent/`                  agentic profile (settings, GEMINI.md, system.md, skills, subagents)
 - `~/.local/bin/gemini-agent`         launcher that exports `GEMINI_CLI_HOME` + `GEMINI_SYSTEM_MD`
 - `~/gemini-agent-workspace/`         Python workspace: venv, scripts/, tasks/, data/, logs/, scripts.md
-- **Specialized Subagents**           [`python-runner`](profile/.gemini/agents/python-runner.md), [`sysadmin`](docs/subagents.md), [`brain`](docs/agents/brain.md)
+- **Specialized Subagents**           [`python-runner`](docs/agents/python-runner.md), [`sysadmin`](docs/agents/sysadmin.md), [`brain`](docs/agents/brain.md)
 - **Agent Skills**                    [`project-hub`](docs/project-hub.md)
 - YOLO mode + policy safety net       [`docs/safety-policy.md`](docs/safety-policy.md)
 - Backup scripts                      `~/.gemini-agent/backup/backup.sh` and `restore.sh`

@@ -1,0 +1,3 @@
+- [x] Create dedicated `docs/agents/brain.md`
+- [x] Update `docs/subagents.md` with brain specialist
+- [x] Streamline `README.md` with documentation links
