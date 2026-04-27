@@ -109,6 +109,7 @@ you do, because the meter is running.
 - `~/gemini-agent-workspace/`         Python workspace: venv, scripts/, tasks/, data/, logs/, scripts.md
 - `python-runner` subagent            isolated Python runner with full user-level system access
 - `sysadmin` advisor subagent         read-only Linux diagnostics that returns an execution plan to the parent
+- `brain` high-reasoning subagent     complex logic and deep analysis specialist (Gemini 3.1 Pro)
 - `project-hub` skill                 per-project wiki-lite memory hub (inbox, plan, knowledge) for projects anywhere on disk
 - YOLO mode + policy safety net       autonomous by default; destructive/privileged shell commands still prompt
 - Backup scripts                      `~/.gemini-agent/backup/backup.sh` and `restore.sh`
