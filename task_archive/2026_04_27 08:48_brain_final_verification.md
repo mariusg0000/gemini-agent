@@ -1,0 +1,4 @@
+- [x] Retry @brain logic audit
+  - [x] Verify test files exist
+  - [x] Invoke `@brain` subagent
+  - [x] Verify comprehensive response

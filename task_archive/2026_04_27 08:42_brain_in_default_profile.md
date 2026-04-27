@@ -1,0 +1,5 @@
+- [x] Implement brain in default gemini profile
+  - [x] Verify `~/.gemini/` structure
+  - [x] Create `~/.gemini/agents/` if missing
+  - [x] Copy `brain.md` to `~/.gemini/agents/brain.md`
+  - [x] Update `~/.gemini/GEMINI.md` with brain workflow

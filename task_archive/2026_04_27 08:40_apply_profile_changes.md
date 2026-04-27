@@ -1,0 +1,3 @@
+- [x] Apply changes to active profile
+  - [x] Copy `profile/system.md` to `~/.gemini-agent/system.md`
+  - [x] Copy `profile/.gemini/agents/brain.md` to `~/.gemini-agent/.gemini/agents/brain.md`

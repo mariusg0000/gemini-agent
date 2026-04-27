@@ -1,0 +1,1 @@
+- [ ] Plan Fedora support for gemini-agent

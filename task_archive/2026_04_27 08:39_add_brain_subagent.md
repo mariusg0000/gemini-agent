@@ -1,0 +1,3 @@
+- [x] Add brain subagent and delegation workflow
+  - [x] Create `profile/.gemini/agents/brain.md`
+  - [x] Update `profile/system.md` with brain delegation workflow

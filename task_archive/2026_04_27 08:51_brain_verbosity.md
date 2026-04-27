@@ -1,0 +1,5 @@
+- [x] Increase @brain workflow verbosity
+  - [x] Update `profile/system.md` to display summary before delegation
+  - [x] Update `profile/.gemini/agents/brain.md` to include tool logs in output
+  - [x] Update default profile `GEMINI.md`
+  - [x] Apply changes to `~/.gemini-agent/` and `~/.gemini/`

@@ -1,0 +1,1 @@
+- [ ] Analyze the project structure and core components
